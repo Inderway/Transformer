@@ -6,6 +6,7 @@
 
 import spacy
 import os
+import io
 import torchtext.datasets as datasets
 from torchtext.vocab import build_vocab_from_iterator
 from os.path import exists
@@ -30,6 +31,10 @@ from torch.optim.lr_scheduler import LambdaLR
 # =================Tokenization==================
 # 加载分词器
 def load_tokenizers():
+    '''
+    pip install https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.4.0/de_core_news_sm-3.4.0.tar.gz
+    pip install https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.4.0/en_core_web_sm-3.4.0.tar.gz
+    '''
     try:
         # 使用load加载spacy的模型
         # 德语-core-新闻文本-无词向量
@@ -55,6 +60,23 @@ def yield_tokens(data_iter, tokenizer, index):
     for from_to_tuple in data_iter:
         yield tokenizer(from_to_tuple[index])
 
+def getData():
+    train_path=("data/train/train.de","data/train/train.en")
+    val_path=("data/val/val.de","data/val/val.en")
+    test_path=("data/test/test_2016_flickr.de","data/test/test_2016_flickr.en")
+    def data_process(filepath):
+        de_iter=iter(io.open(filepath[0],encoding='utf8'))
+        en_iter=iter(io.open(filepath[1],encoding='utf8'))
+        # a list that contains tuples of sentence pair
+        data=[]
+        for de, en in zip(de_iter, en_iter):
+            data.append((de.rstrip("\n"),en.rstrip("\n")))
+        return data
+    train=data_process(train_path)
+    val=data_process(val_path)
+    test=data_process(test_path)
+    return train,val,test
+
 def build_vocabulary(spacy_de, spacy_en):
     def tokenize_de(text):
         return tokenize(text, spacy_de)
@@ -63,7 +85,7 @@ def build_vocabulary(spacy_de, spacy_en):
         return tokenize(text, spacy_en)
 
     print("Building German Vocabulary ...")
-    train, val, test = datasets.Multi30k(language_pair=("de", "en"))
+    train, val, test =getData()
     vocab_src = build_vocab_from_iterator(
         # 可以生成列表的迭代器，使用tokenize_de作为模型，从0开始
         yield_tokens(train + val + test, tokenize_de, index=0),
@@ -71,7 +93,6 @@ def build_vocabulary(spacy_de, spacy_en):
         specials=["<s>", "</s>", "<blank>", "<unk>"],
     )
     print("Building English Vocabulary ...")
-    train, val, test = datasets.Multi30k(language_pair=("de", "en"))
     vocab_tgt = build_vocab_from_iterator(
         yield_tokens(train + val + test, tokenize_en, index=1),
         min_freq=2,
@@ -436,5 +457,5 @@ spacy_de, spacy_en = load_tokenizers()
 vocab_src, vocab_tgt = load_vocab(spacy_de, spacy_en)
 
 
-model = load_trained_model()
-run_model_example()
+# model = load_trained_model()
+# run_model_example()

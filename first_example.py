@@ -116,4 +116,4 @@ def example_simple_model():
     src_mask = torch.ones(1, 1, max_len)
     print(greedy_decode(model, src, src_mask, max_len=max_len, start_symbol=0))
 
-example_simple_model()
+# example_simple_model()
