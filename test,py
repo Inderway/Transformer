@@ -1,0 +1,26 @@
+# -*- coding=utf8 -*-
+# Aug 13, 2022
+# For testing codes
+# Created by Wei Yin
+
+import torchtext.datasets as datasets
+import spacy
+import io
+import os
+from real_example import load_tokenizers, tokenize, yield_tokens, getData, build_vocabulary, load_vocab
+from torchtext.vocab import build_vocab_from_iterator
+import torch
+
+train, val, test =getData()
+def tokenize_de(text):
+    return tokenize(text, spacy_de)
+def tokenize_en(text):
+    return tokenize(text, spacy_en)
+
+spacy_de, spacy_en=load_tokenizers()
+for i in range(5):
+    token=yield_tokens(test,tokenize_en,1)
+    print(token)
+
+
+
