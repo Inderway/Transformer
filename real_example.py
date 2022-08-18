@@ -129,13 +129,14 @@ def collate_batch(
     tgt_vocab,
     device,
     max_padding=128,
-    pad_id=2,
+    pad_id=2,   # pad_id对应<blank>
 ):
     # 获得begin和end标志的id
     bs_id = torch.tensor([0], device=device)  # <s> token id
     eos_id = torch.tensor([1], device=device)  # </s> token id
     src_list, tgt_list = [], []
     for (_src, _tgt) in batch:
+        # 一个1维tensor，由<s>id+tokens的id+</s>id组成
         processed_src = torch.cat(
             [
                 bs_id,
@@ -162,8 +163,10 @@ def collate_batch(
         )
         src_list.append(
             # warning - overwrites values for negative values of padding - len
+            # 将所有tensor的长都变为max_padding
             pad(
                 processed_src,
+                # 0为数据开始位置，第2个参数为padding长度
                 (
                     0,
                     max_padding - len(processed_src),
@@ -178,7 +181,7 @@ def collate_batch(
                 value=pad_id,
             )
         )
-
+    # 将list转为tensor
     src = torch.stack(src_list)
     tgt = torch.stack(tgt_list)
     return (src, tgt)

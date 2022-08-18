@@ -10,6 +10,7 @@ import os
 from real_example import load_tokenizers, tokenize, yield_tokens, getData, build_vocabulary, load_vocab
 from torchtext.vocab import build_vocab_from_iterator
 import torch
+from torch.nn.functional import log_softmax, pad
 
 train, val, test =getData()
 def tokenize_de(text):
@@ -32,7 +33,16 @@ tgt=torch.cat(
     ],
     0,
 )
-print(tgt)
+tgt_pad=pad(
+    tgt,
+    (
+        1,
+        3,
+    ),
+    value=2,
+)
+for i in range(len(tgt_pad)):
+    print(vocab_tgt.lookup_token(tgt_pad[i].data))
 
 
 
