@@ -55,10 +55,16 @@ def tokenize(text, tokenizer):
     # 返回分词结果列表
     return [tok.text for tok in tokenizer.tokenizer(text)]
 
+def tokenize_de(text):
+    return tokenize(text, spacy_de)
+
+def tokenize_en(text):
+    return tokenize(text, spacy_en)
 
 def yield_tokens(data_iter, tokenizer, index):
     # (de, en)
     for from_to_tuple in data_iter:
+        # 返回一个包含str类型的token的list
         yield tokenizer(from_to_tuple[index])
 
 def getData():
@@ -79,11 +85,6 @@ def getData():
     return train,val,test
 
 def build_vocabulary(spacy_de, spacy_en):
-    def tokenize_de(text):
-        return tokenize(text, spacy_de)
-
-    def tokenize_en(text):
-        return tokenize(text, spacy_en)
     train, val, test =getData()
     totality=train+val+test
     print("All sentence pairs: %d"%(len(totality)))
@@ -91,13 +92,13 @@ def build_vocabulary(spacy_de, spacy_en):
     vocab_src = build_vocab_from_iterator(
         # 可以生成列表的迭代器，使用tokenize_de作为模型，从0开始
         yield_tokens(totality, tokenize_de, index=0),
-        min_freq=2,
+        min_freq=1,
         specials=["<s>", "</s>", "<blank>", "<unk>"],
     )
     print("Building English Vocabulary ...")
     vocab_tgt = build_vocab_from_iterator(
         yield_tokens(totality, tokenize_en, index=1),
-        min_freq=2,
+        min_freq=1,
         specials=["<s>", "</s>", "<blank>", "<unk>"],
     )
     vocab_src.set_default_index(vocab_src["<unk>"])
@@ -115,6 +116,8 @@ def load_vocab(spacy_de, spacy_en):
     print("Finished.\nVocabulary sizes:")
     print(len(vocab_src))
     print(len(vocab_tgt))
+    # vocab为(word, index)型map
+    # 该封装类需要使用特定函数查看元素
     return vocab_src, vocab_tgt
 
 # ======================Iterator======================
@@ -128,6 +131,7 @@ def collate_batch(
     max_padding=128,
     pad_id=2,
 ):
+    # 获得begin和end标志的id
     bs_id = torch.tensor([0], device=device)  # <s> token id
     eos_id = torch.tensor([1], device=device)  # </s> token id
     src_list, tgt_list = [], []
@@ -191,11 +195,7 @@ def create_dataloaders(
     is_distributed=True,
 ):
     # def create_dataloaders(batch_size=12000):
-    def tokenize_de(text):
-        return tokenize(text, spacy_de)
 
-    def tokenize_en(text):
-        return tokenize(text, spacy_en)
 
     def collate_fn(batch):
         return collate_batch(

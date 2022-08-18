@@ -18,9 +18,23 @@ def tokenize_en(text):
     return tokenize(text, spacy_en)
 
 spacy_de, spacy_en=load_tokenizers()
-for i in range(5):
-    token=yield_tokens(test,tokenize_en,1)
-    print(token)
+vocab_src, vocab_tgt=torch.load("vocab.pt")
+bs_id = torch.tensor([0])  # <s> token id
+eos_id = torch.tensor([1])  # </s> token id
+tgt=torch.cat(
+    [
+        bs_id,
+        torch.tensor(
+            vocab_tgt(tokenize_en(test[0][1])),
+            dtype=torch.int64,
+        ),
+        eos_id,
+    ],
+    0,
+)
+print(tgt)
+
+
 
 
 
