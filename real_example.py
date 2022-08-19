@@ -261,7 +261,7 @@ def train_worker(
 ):
     print(f"Train worker process using GPU: {gpu} for training", flush=True)
     torch.cuda.set_device(gpu)
-
+    # 获得<blank>的ud
     pad_idx = vocab_tgt["<blank>"]
     d_model = 512
     model = make_model(len(vocab_src), len(vocab_tgt), N=6)
@@ -269,13 +269,15 @@ def train_worker(
     module = model
     is_main_process = True
     if is_distributed:
+        # 初始化进程组
         dist.init_process_group(
             "nccl", init_method="env://", rank=gpu, world_size=ngpus_per_node
         )
         model = DDP(model, device_ids=[gpu])
         module = model.module
+        # 若gpu为0，则为主进程
         is_main_process = gpu == 0
-
+    # 进行label smoothing
     criterion = LabelSmoothing(
         size=len(vocab_tgt), padding_idx=pad_idx, smoothing=0.1
     )
