@@ -131,6 +131,11 @@ def collate_batch(
     max_padding=128,
     pad_id=2,   # pad_id对应<blank>
 ):
+    """
+    return: tuple size=2, contains
+        src: tensor n_sentences x max_padding
+        tgt: tensor n_sentences x max_padding
+    """
     # 获得begin和end标志的id
     bs_id = torch.tensor([0], device=device)  # <s> token id
     eos_id = torch.tensor([1], device=device)  # </s> token id
@@ -212,13 +217,12 @@ def create_dataloaders(
             pad_id=vocab_src.get_stoi()["<blank>"],
         )
 
-    train_iter, valid_iter, test_iter = datasets.Multi30k(
-        language_pair=("de", "en")
-    )
-
+    train_iter, valid_iter, test_iter = getData()
+    # 将list转为map
     train_iter_map = to_map_style_dataset(
         train_iter
     )  # DistributedSampler needs a dataset len()
+    # 分布式sampler，用于加速计算
     train_sampler = (
         DistributedSampler(train_iter_map) if is_distributed else None
     )
@@ -226,10 +230,11 @@ def create_dataloaders(
     valid_sampler = (
         DistributedSampler(valid_iter_map) if is_distributed else None
     )
-
+    # DataLoader用于组合数据集与采样器
     train_dataloader = DataLoader(
         train_iter_map,
         batch_size=batch_size,
+        # 无采样器则要重排数据
         shuffle=(train_sampler is None),
         sampler=train_sampler,
         collate_fn=collate_fn,
@@ -243,6 +248,7 @@ def create_dataloaders(
     )
     return train_dataloader, valid_dataloader
 
+#=============Train=============
 def train_worker(
     gpu,
     ngpus_per_node,
