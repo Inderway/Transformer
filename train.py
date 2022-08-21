@@ -27,7 +27,13 @@ class DummyScheduler:
         None
 
 class Batch:
-    """Object for holding a batch of data with mask during training."""
+    """
+    Object for holding a batch of data with mask during training.
+    Args:
+        src: batch_size x max_padding tensor
+        tgt: batch_size x max_padding tensor
+        pad: the id of <blank>
+    """
 
     def __init__(self, src, tgt=None, pad=2):  # 2 = <blank>
         self.src = src
@@ -48,7 +54,7 @@ class Batch:
         "Create a mask to hide padding and future words."
         # 把<blank>无视掉
         tgt_mask = (tgt != pad).unsqueeze(-2)
-        # subsequent_mask兼顾无视<blanK>
+        # subsequent_mask兼顾无视<blank>
         tgt_mask = tgt_mask & subsequent_mask(tgt.size(-1)).type_as(
             tgt_mask.data
         )
@@ -151,7 +157,7 @@ class LabelSmoothing(nn.Module):
         # shape为ntokens x vocab
         # 先使true_dist具有x的shape
         true_dist = x.data.clone()
-        # size-2表示去掉首尾
+        # size-2表示去掉<unk>和<blank>
         true_dist.fill_(self.smoothing / (self.size - 2))
         # index的shape为vocab x 1
         # true_dist[i][index[i][j]]=1-smoothing
@@ -159,10 +165,14 @@ class LabelSmoothing(nn.Module):
         true_dist.scatter_(1, target.data.unsqueeze(1), self.confidence)
         # padding索引处赋0
         true_dist[:, self.padding_idx] = 0
-        # nonzero返回由非0元素的坐标组成的列表，此处返回等于padding_idx的坐标
+        # nonzero返回由非0元素的 坐标 组成的 列表 ，
+        # 此处返回 值 等于padding_idx的元素的坐标
+        # 通常情况下，target等于<blank>的元素都是padding元素
         mask = torch.nonzero(target.data == self.padding_idx)
         if mask.dim() > 0:
-            # 将对应position的prediction给padding掉
+            # 若有padding项
+            # 将对应 position 的prediction给mask掉，
+            # 即该处的token为<blank>
             true_dist.index_fill_(0, mask.squeeze(), 0.0)
         self.true_dist = true_dist
         # 用正确分布与预测计算loss

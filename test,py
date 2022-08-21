@@ -11,40 +11,23 @@ from real_example import load_tokenizers, tokenize, yield_tokens, getData, build
 from torchtext.vocab import build_vocab_from_iterator
 import torch
 from torch.nn.functional import log_softmax, pad
+import torch.nn as nn
+from real_example import create_dataloaders
 
-train, val, test =getData()
-def tokenize_de(text):
-    return tokenize(text, spacy_de)
-def tokenize_en(text):
-    return tokenize(text, spacy_en)
+spacy_de, spacy_en = load_tokenizers()
+vocab_src, vocab_tgt = load_vocab(spacy_de, spacy_en)
+train_dataloader, valid_dataloader = create_dataloaders(
+        torch.device("cpu"),
+        vocab_src,
+        vocab_tgt,
+        spacy_de,
+        spacy_en,
+        batch_size=12000,
+        max_padding=128,
+        is_distributed=False,
+    )
 
-spacy_de, spacy_en=load_tokenizers()
-vocab_src, vocab_tgt=torch.load("vocab.pt")
-bs_id = torch.tensor([0])  # <s> token id
-eos_id = torch.tensor([1])  # </s> token id
-tgt=torch.cat(
-    [
-        bs_id,
-        torch.tensor(
-            vocab_tgt(tokenize_en(test[0][1])),
-            dtype=torch.int64,
-        ),
-        eos_id,
-    ],
-    0,
-)
-tgt_pad=pad(
-    tgt,
-    (
-        1,
-        3,
-    ),
-    value=2,
-)
-for i in range(len(tgt_pad)):
-    print(vocab_tgt.lookup_token(tgt_pad[i].data))
-
-
-
+for b in train_dataloader:
+    print(b[0].shape)
 
 

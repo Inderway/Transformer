@@ -203,7 +203,11 @@ def create_dataloaders(
     is_distributed=True,
 ):
     # def create_dataloaders(batch_size=12000):
+    def tokenize_de(text):
+        return tokenize(text, spacy_de)
 
+    def tokenize_en(text):
+        return tokenize(text, spacy_en)
 
     def collate_fn(batch):
         return collate_batch(
@@ -277,7 +281,7 @@ def train_worker(
         module = model.module
         # 若gpu为0，则为主进程
         is_main_process = gpu == 0
-    # 进行label smoothing
+    # 进行label smoothing，设为指标
     criterion = LabelSmoothing(
         size=len(vocab_tgt), padding_idx=pad_idx, smoothing=0.1
     )
@@ -307,12 +311,16 @@ def train_worker(
 
     for epoch in range(config["num_epochs"]):
         if is_distributed:
+            # 分布式模式下，需要在每个epoch开始时调用set_epoch方法
+            # 在创建Dataloader
             train_dataloader.sampler.set_epoch(epoch)
             valid_dataloader.sampler.set_epoch(epoch)
 
         model.train()
         print(f"[GPU{gpu}] Epoch {epoch} Training ====", flush=True)
         _, train_state = run_epoch(
+            # b[0]的shape为 batch_size x max_padding
+            # 若训练集有29000句对，则b迭代3次，每次包含12000，12000,5000句对
             (Batch(b[0], b[1], pad_idx) for b in train_dataloader),
             model,
             SimpleLossCompute(module.generator, criterion),
