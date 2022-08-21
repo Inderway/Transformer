@@ -330,11 +330,12 @@ def train_worker(
             accum_iter=config["accum_iter"],
             train_state=train_state,
         )
-
+        # 获取GPU状态
         GPUtil.showUtilization()
         if is_main_process:
             file_path = "%s%.2d.pt" % (config["file_prefix"], epoch)
             torch.save(module.state_dict(), file_path)
+        # 清空缓存
         torch.cuda.empty_cache()
 
         print(f"[GPU{gpu}] Epoch {epoch} Validation ====", flush=True)
