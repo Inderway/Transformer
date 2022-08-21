@@ -44,6 +44,14 @@ class SimpleLossCompute:
 
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol):
+    """
+    Args:
+        model
+        src
+        src_mask
+        max_len
+        start_symbol
+    """
     # 获得encode结果
     memory = model.encode(src, src_mask)
     # 先用start_symbol填充初始输出

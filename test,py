@@ -14,20 +14,8 @@ from torch.nn.functional import log_softmax, pad
 import torch.nn as nn
 from real_example import create_dataloaders
 
-spacy_de, spacy_en = load_tokenizers()
-vocab_src, vocab_tgt = load_vocab(spacy_de, spacy_en)
-train_dataloader, valid_dataloader = create_dataloaders(
-        torch.device("cpu"),
-        vocab_src,
-        vocab_tgt,
-        spacy_de,
-        spacy_en,
-        batch_size=12000,
-        max_padding=128,
-        is_distributed=False,
-    )
+result=[()]*15
+print(result)
 
-for b in train_dataloader:
-    print(b[0].shape)
 
 

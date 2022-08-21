@@ -315,7 +315,7 @@ def train_worker(
             # 在创建Dataloader
             train_dataloader.sampler.set_epoch(epoch)
             valid_dataloader.sampler.set_epoch(epoch)
-
+        # Train
         model.train()
         print(f"[GPU{gpu}] Epoch {epoch} Training ====", flush=True)
         _, train_state = run_epoch(
@@ -338,6 +338,7 @@ def train_worker(
         # 清空缓存
         torch.cuda.empty_cache()
 
+        # Validation
         print(f"[GPU{gpu}] Epoch {epoch} Validation ====", flush=True)
         model.eval()
         sloss = run_epoch(
@@ -347,7 +348,7 @@ def train_worker(
             DummyOptimizer(),
             DummyScheduler(),
             mode="eval",
-        )
+        )[0]
         print(sloss)
         torch.cuda.empty_cache()
 
@@ -362,6 +363,7 @@ def train_distributed_model(vocab_src, vocab_tgt, spacy_de, spacy_en, config):
     os.environ["MASTER_PORT"] = "12356"
     print(f"Number of GPUs detected: {ngpus}")
     print("Spawning training processes ...")
+    # 多进程工作
     mp.spawn(
         train_worker,
         nprocs=ngpus,
@@ -370,6 +372,9 @@ def train_distributed_model(vocab_src, vocab_tgt, spacy_de, spacy_en, config):
 
 
 def train_model(vocab_src, vocab_tgt, spacy_de, spacy_en, config):
+    """
+    根据是否指定分布式计算来选择模型训练方式
+    """
     if config["distributed"]:
         train_distributed_model(
             vocab_src, vocab_tgt, spacy_de, spacy_en, config
@@ -381,9 +386,10 @@ def train_model(vocab_src, vocab_tgt, spacy_de, spacy_en, config):
 
 
 def load_trained_model():
+    """加载已训练的模型"""
     config = {
         "batch_size": 32,
-        "distributed": False,
+        "distributed": True,
         "num_epochs": 8,
         "accum_iter": 10,
         "base_lr": 1.0,
@@ -400,7 +406,10 @@ def load_trained_model():
     return model
 
 def average(model, models):
-    "Average models into model"
+    """
+    Average models into model
+    对于多模型的情况，平均模型以获得总体效果
+    """
     for ps in zip(*[m.params() for m in [model] + models]):
         ps[0].copy_(torch.sum(*ps[1:]) / len(ps[1:]))
 
@@ -413,13 +422,15 @@ def check_outputs(
     pad_idx=2,
     eos_string="</s>",
 ):
+    #创建包含n_examples个元组的列表
     results = [()] * n_examples
     for idx in range(n_examples):
         print("\nExample %d ========\n" % idx)
+        # b=(src, tgt)
         b = next(iter(valid_dataloader))
         rb = Batch(b[0], b[1], pad_idx)
         greedy_decode(model, rb.src, rb.src_mask, 64, 0)[0]
-
+        # 根据token的id来获取对应单词
         src_tokens = [
             vocab_src.get_itos()[x] for x in rb.src[0] if x != pad_idx
         ]
@@ -478,7 +489,5 @@ if __name__=='__main__':
     # Tokenization
     spacy_de, spacy_en = load_tokenizers()
     vocab_src, vocab_tgt = load_vocab(spacy_de, spacy_en)
-
-
-    # model = load_trained_model()
-    # run_model_example()
+    model = load_trained_model()
+    run_model_example()

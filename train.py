@@ -84,6 +84,7 @@ def run_epoch(
     total_loss = 0
     tokens = 0
     n_accum = 0
+    # i为batch的索引，一个batch默认有32句对
     for i, batch in enumerate(data_iter):
         out = model.forward(
             batch.src, batch.tgt, batch.src_mask, batch.tgt_mask
