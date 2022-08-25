@@ -11,18 +11,14 @@ import torchtext.datasets as datasets
 from torchtext.vocab import build_vocab_from_iterator
 from os.path import exists
 import torch
-import torch.nn as nn
-from torch.nn.functional import log_softmax, pad
+from torch.nn.functional import pad
 from torchtext.data.functional import to_map_style_dataset
 from torch.utils.data import DataLoader
 import GPUtil
-import warnings
 from torch.utils.data.distributed import DistributedSampler
 from Transformer import make_model
 from train import LabelSmoothing, TrainState, run_epoch, Batch, rate
 from first_example import SimpleLossCompute, DummyOptimizer, DummyScheduler, greedy_decode
-import pandas as pd
-import altair as alt
 import torch.distributed as dist
 import torch.multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel as DDP
